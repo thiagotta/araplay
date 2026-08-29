@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & test (Apple Silicon)
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      # MPVKit ships prebuilt mpv/FFmpeg frameworks — a few hundred MB that
+      # dominate CI time when fetched cold. The key tracks project.yml, where
+      # the dependency version constraint lives.
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: build/DerivedData/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Run tests
+        run: |
+          xcodebuild \
+            -project AraPlay.xcodeproj \
+            -scheme AraPlay \
+            -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build/DerivedData \
+            test
+
+      # Release has meaningfully different settings (entitlement injection off,
+      # optimizations, no get-task-allow); make sure it stays buildable too.
+      - name: Build Release
+        run: |
+          xcodebuild \
+            -project AraPlay.xcodeproj \
+            -scheme AraPlay \
+            -configuration Release \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build/DerivedData \
+            -quiet \
+            build
+
+      - name: Package app
+        run: |
+          ditto -c -k --keepParent \
+            build/DerivedData/Build/Products/Release/AraPlay.app \
+            AraPlay.zip
+
+      # Ad-hoc signed: useful as a build artifact for the repo owner, but
+      # Gatekeeper will block it on other machines until releases are
+      # Developer ID signed and notarized.
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AraPlay-${{ github.sha }}
+          path: AraPlay.zip
+          retention-days: 14

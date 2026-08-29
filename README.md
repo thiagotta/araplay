@@ -1,5 +1,7 @@
 # AraPlay
 
+[![CI](https://github.com/thiagotta/araplay/actions/workflows/ci.yml/badge.svg)](https://github.com/thiagotta/araplay/actions/workflows/ci.yml)
+
 A native, fast, simple media player for macOS.
 
 AraPlay plays your local audio and video files — all of them, from MP3 and FLAC
