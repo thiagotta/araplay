@@ -120,6 +120,12 @@ AraPlay embeds, via [MPVKit](https://github.com/mpvkit/MPVKit):
 The full corresponding source of this application is this repository, which
 satisfies the LGPL's relinking requirement for the statically linked builds.
 
+## Contributing
+
+Small, focused pull requests are welcome — `main` is protected, so all
+changes arrive by PR with CI green. [CONTRIBUTING.md](CONTRIBUTING.md) has
+the workflow and expectations.
+
 ## License
 
 AraPlay is released under the [MIT License](LICENSE). The bundled playback
